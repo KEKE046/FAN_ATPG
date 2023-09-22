@@ -547,9 +547,6 @@ bool ReportFaultCmd::exec(const std::vector<std::string> &argv)
 				std::cout << " AB     ";
 				break;
 		}
-		int cid = fanMgr_->cir->circuitGates_[(*it)->gateID_].cellId_;
-		int pid = (*it)->faultyLine_;
-		int pmtid = fanMgr_->cir->circuitGates_[(*it)->gateID_].primitiveId_;
 		if ((*it)->gateID_ == -1)
 		{ // CK
 			std::cout << "CK";
@@ -566,53 +563,93 @@ bool ReportFaultCmd::exec(const std::vector<std::string> &argv)
 		{ // test_se
 			std::cout << "test_se";
 		}
-		else if (fanMgr_->cir->circuitGates_[(*it)->gateID_].gateType_ == Gate::PI)
-		{
-			std::cout << fanMgr_->nl->getTop()->getPort(cid)->name_ << " ";
-			std::cout << "(primary input)";
-		}
-		else if (fanMgr_->cir->circuitGates_[(*it)->gateID_].gateType_ == Gate::PO)
-		{
-			std::cout << fanMgr_->nl->getTop()->getPort(cid)->name_ << " ";
-			std::cout << "(primary output)";
-		}
-		else
-		{
-			Cell *c = fanMgr_->nl->getTop()->getCell(cid);
-			// std::cout << "test" << c->name_<< " " << cid << "\n";
-			Cell *libc = c->libc_;
-			Cell *pmt = libc->getCell(pmtid);
-			Port *p = NULL;
-			if (pid < 0)
-			{ // must be CK,SE,SI pins on FF
-				if (pid == -1)
-				{
-					std::cout << c->name_ << "/CK ";
-				}
-				else if (pid == -2)
-				{
-					std::cout << c->name_ << "/SE ";
-				}
-				else if (pid == -3)
-				{
-					std::cout << c->name_ << "/SI ";
-				}
-				else
-				{
-					std::cout << c->name_ << "/QN ";
-				}
+		else {
+			int cid = fanMgr_->cir->circuitGates_[(*it)->gateID_].cellId_;
+			int pid = (*it)->faultyLine_;
+			int pmtid = fanMgr_->cir->circuitGates_[(*it)->gateID_].primitiveId_;
+			if (fanMgr_->cir->circuitGates_[(*it)->gateID_].gateType_ == Gate::PI)
+			{
+				std::cout << fanMgr_->nl->getTop()->getPort(cid)->name_ << " ";
+				std::cout << "(primary input)";
 			}
-			else if (pid == 0)
-			{ // output
-				if (!strcmp(libc->name_, "SDFFXL"))
-				{
-					std::cout << c->name_ << "/Q ";
+			else if (fanMgr_->cir->circuitGates_[(*it)->gateID_].gateType_ == Gate::PO)
+			{
+				std::cout << fanMgr_->nl->getTop()->getPort(cid)->name_ << " ";
+				std::cout << "(primary output)";
+			}
+			else
+			{
+				Cell *c = fanMgr_->nl->getTop()->getCell(cid);
+				// std::cout << "test" << c->name_<< " " << cid << "\n";
+				Cell *libc = c->libc_;
+				Cell *pmt = libc->getCell(pmtid);
+				Port *p = NULL;
+				if (pid < 0)
+				{ // must be CK,SE,SI pins on FF
+					if (pid == -1)
+					{
+						std::cout << c->name_ << "/CK ";
+					}
+					else if (pid == -2)
+					{
+						std::cout << c->name_ << "/SE ";
+					}
+					else if (pid == -3)
+					{
+						std::cout << c->name_ << "/SI ";
+					}
+					else
+					{
+						std::cout << c->name_ << "/QN ";
+					}
+				}
+				else if (pid == 0)
+				{ // output
+					if (!strcmp(libc->name_, "SDFFXL"))
+					{
+						std::cout << c->name_ << "/Q ";
+					}
+					else
+					{
+						for (int i = 0; i < pmt->getNPort(); ++i)
+						{
+							if (pmt->getPort(i)->type_ != Port::OUTPUT)
+							{
+								continue;
+							}
+							Net *n = pmt->getPort(i)->exNet_;
+							if (!n)
+							{
+								continue;
+							}
+							PortSet pset = libc->getNetPorts(n->id_);
+							PortSet::iterator pit = pset.begin();
+							for (; pit != pset.end(); ++pit)
+							{
+								if ((*pit)->top_ != libc)
+								{
+									continue;
+								}
+								p = (*pit);
+								break;
+							}
+							if (p)
+							{
+								break;
+							}
+						}
+					}
 				}
 				else
-				{
+				{ // input
+					int inCount = 0;
 					for (int i = 0; i < pmt->getNPort(); ++i)
 					{
-						if (pmt->getPort(i)->type_ != Port::OUTPUT)
+						if (pmt->getPort(i)->type_ == Port::INPUT)
+						{
+							++inCount;
+						}
+						if (inCount != pid)
 						{
 							continue;
 						}
@@ -638,47 +675,12 @@ bool ReportFaultCmd::exec(const std::vector<std::string> &argv)
 						}
 					}
 				}
-			}
-			else
-			{ // input
-				int inCount = 0;
-				for (int i = 0; i < pmt->getNPort(); ++i)
+				if (p)
 				{
-					if (pmt->getPort(i)->type_ == Port::INPUT)
-					{
-						++inCount;
-					}
-					if (inCount != pid)
-					{
-						continue;
-					}
-					Net *n = pmt->getPort(i)->exNet_;
-					if (!n)
-					{
-						continue;
-					}
-					PortSet pset = libc->getNetPorts(n->id_);
-					PortSet::iterator pit = pset.begin();
-					for (; pit != pset.end(); ++pit)
-					{
-						if ((*pit)->top_ != libc)
-						{
-							continue;
-						}
-						p = (*pit);
-						break;
-					}
-					if (p)
-					{
-						break;
-					}
+					std::cout << c->name_ << "/" << p->name_ << " ";
 				}
+				std::cout << "(" << libc->name_ << ")";
 			}
-			if (p)
-			{
-				std::cout << c->name_ << "/" << p->name_ << " ";
-			}
-			std::cout << "(" << libc->name_ << ")";
 		}
 		std::cout << "\n";
 	}
