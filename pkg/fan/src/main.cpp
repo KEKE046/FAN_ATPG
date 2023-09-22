@@ -198,6 +198,8 @@ void initCmd(CmdMgr &cmdMgr, FanMgr &fanMgr)
 	Cmd *readNlCmd = new ReadNlCmd("read_netlist", &fanMgr);
 	Cmd *setFaultTypeCmd = new SetFaultTypeCmd("set_fault_type", &fanMgr);
 	Cmd *buildCirCmd = new BuildCircuitCmd("build_circuit", &fanMgr);
+	Cmd *exportCircuitCmd = new ExportCircuitCmd("export_circuit", &fanMgr);
+	Cmd *exportPatCmd = new ExportPatCmd("export_pattern", &fanMgr);
 	Cmd *reportNlCmd = new ReportNetlistCmd("report_netlist", &fanMgr);
 	Cmd *reportCellCmd = new ReportCellCmd("report_cell", &fanMgr);
 	Cmd *reportLibCmd = new ReportLibCmd("report_lib", &fanMgr);
@@ -209,6 +211,8 @@ void initCmd(CmdMgr &cmdMgr, FanMgr &fanMgr)
 	cmdMgr.regCmd("SETUP", readNlCmd);
 	cmdMgr.regCmd("SETUP", setFaultTypeCmd);
 	cmdMgr.regCmd("SETUP", buildCirCmd);
+	cmdMgr.regCmd("SETUP", exportCircuitCmd);
+	cmdMgr.regCmd("SETUP", exportPatCmd);
 	cmdMgr.regCmd("SETUP", reportNlCmd);
 	cmdMgr.regCmd("SETUP", reportCellCmd);
 	cmdMgr.regCmd("SETUP", reportLibCmd);

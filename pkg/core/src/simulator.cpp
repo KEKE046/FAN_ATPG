@@ -6,6 +6,7 @@
 // **************************************************************************
 
 #include "simulator.h"
+#include "fault.h"
 
 using namespace IntfNs;
 using namespace CoreNs;
@@ -219,6 +220,11 @@ void Simulator::parallelPatternFaultSimWithAllPattern(PatternProcessor *pPattern
 		parallelPatternSetPattern(pPatternCollector, patternStartIndex);
 		parallelPatternFaultSim(remainingFaults);
 	}
+	// for (Fault *const &pFault : pFaultListExtract->faultsInCircuit_) {
+	// 	if(pFault->detection_ == Fault::DT) {
+	// 		std::cerr << "detected: " << pFault->gateID_ << " " << pFault->faultyLine_ << "\n";
+	// 	}
+	// }
 }
 
 // **************************************************************************
@@ -250,10 +256,23 @@ void Simulator::parallelPatternFaultSim(FaultPtrList &remainingFaults)
 	{
 		if (parallelPatternCheckActivation((*it)))
 		{
+			// if((*it)->gateID_ == 4 && (*it)->faultyLine_ == 0) {
+			// 	record = true;
+			// 	for(int i = 0; i < pCircuit_->numGate_; i++) {
+			// 		std::cerr << i << ": " << pCircuit_->circuitGates_[i].faultSimLow_ << pCircuit_->circuitGates_[i].faultSimHigh_ << "\n";
+			// 	}
+			// }
 			parallelPatternFaultInjection((*it));
 			eventFaultSim();
+			// if(record) {
+			// 	std::cerr << "after" << "\n";
+			// 	for(int i = 0; i < pCircuit_->numGate_; i++) {
+			// 		std::cerr << i << ": " << pCircuit_->circuitGates_[i].faultSimLow_ << pCircuit_->circuitGates_[i].faultSimHigh_ << "\n";
+			// 	}
+			// }
 			parallelPatternCheckDetection((*it));
 			parallelPatternReset();
+			record = false;
 		}
 		if ((*it)->faultState_ == Fault::DT)
 		{

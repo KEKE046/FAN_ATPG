@@ -43,6 +43,7 @@ namespace CoreNs
 		void parallelPatternFaultSim(FaultPtrList &remainingFaults);
 
 	private:
+		bool record {false};
 		// Used by both parallel fault and parallel pattern simulation.
 		Circuit *pCircuit_;                   // The circuit use in simulator.
 		int numDetection_;                    // For n-detect.

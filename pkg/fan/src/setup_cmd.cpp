@@ -5,10 +5,13 @@
 // Date       [ 2011/08/30 created ]
 // **************************************************************************
 
+#include "core/logic.h"
 #include "interface/netlist_builder.h"
 #include "interface/techlib_builder.h"
 
 #include "setup_cmd.h"
+#include <cstdio>
+#include <cassert>
 
 using namespace CommonNs;
 using namespace IntfNs;
@@ -509,6 +512,92 @@ bool BuildCircuitCmd::exec(const std::vector<std::string> &argv)
 	std::cout << "    " << (double)stat.vmSize / 1024.0 << " MB"
 						<< "\n";
 
+	return true;
+}
+
+static void write_size(FILE * f, size_t x) {
+	fwrite(&x, sizeof(x), 1, f);
+}
+ExportCircuitCmd::ExportCircuitCmd(const std::string &name, FanMgr *fanMgr) : Cmd(name) {
+	fanMgr_ = fanMgr;
+	optMgr_.setName(name);
+	optMgr_.setShortDes("export circuit");
+	optMgr_.setDes("export circuit file to binary");
+	optMgr_.regArg(new Arg(Arg::REQ, "target file", "target"));
+}
+ExportCircuitCmd::~ExportCircuitCmd() {}
+bool ExportCircuitCmd::exec(const std::vector<std::string> &argv)
+{
+	optMgr_.parse(argv);
+	if (optMgr_.getNParsedArg() < 1)
+	{
+		std::cerr << "**ERROR ExportCircuitCmd::exec(): file file needed";
+		std::cerr << "\n";
+		return false;
+	}
+	auto cir = fanMgr_->cir;
+	auto file = optMgr_.getParsedArg(0);
+	FILE * f = fopen(file.c_str(), "wb");
+	size_t num_edges = 0;
+	std::vector<size_t> idx;
+	std::vector<size_t> edges;
+	assert(cir->numPI_ + cir->numPPI_ + cir->numComb_ + cir->numPO_ + cir->numPPI_ == cir->numGate_);
+	assert(cir->circuitGates_.size() == cir->totalGate_);
+	for(auto & i: cir->circuitGates_) {
+		num_edges += i.numFI_;
+		idx.push_back(edges.size());
+		for (auto v: i.faninVector_) {
+			edges.push_back(v);
+		}
+	}
+	write_size(f, cir->numPI_);
+	write_size(f, cir->numPPI_);
+	write_size(f, cir->numComb_);
+	write_size(f, cir->numPO_);
+	write_size(f, cir->numGate_);
+	write_size(f, cir->numFrame_);
+	write_size(f, cir->totalGate_);
+	write_size(f, num_edges);
+	for(auto & i: cir->circuitGates_) {
+		unsigned char gtype = i.gateType_;
+		fwrite(&gtype, sizeof(gtype), 1, f);
+	}
+	fwrite(idx.data(), sizeof(size_t), idx.size(), f);
+	fwrite(edges.data(), sizeof(size_t), edges.size(), f);
+	fclose(f);
+	return true;
+}
+ExportPatCmd::ExportPatCmd(const std::string &name, FanMgr *fanMgr) : Cmd(name) {
+	fanMgr_ = fanMgr;
+	optMgr_.setName(name);
+	optMgr_.setShortDes("export patterns");
+	optMgr_.setDes("export patterns file to binary");
+	optMgr_.regArg(new Arg(Arg::REQ, "target file", "target"));
+}
+ExportPatCmd::~ExportPatCmd() {}
+
+bool ExportPatCmd::exec(const std::vector<std::string> &argv)
+{
+	optMgr_.parse(argv);
+	if (optMgr_.getNParsedArg() < 1)
+	{
+		std::cerr << "**ERROR ExportCircuitCmd::exec(): file file needed";
+		std::cerr << "\n";
+		return false;
+	}
+	auto file = optMgr_.getParsedArg(0);
+	FILE * f = fopen(file.c_str(), "wb");
+	auto n_pat = fanMgr_->pcoll->patternVector_.size();
+	auto n_pi = fanMgr_->pcoll->numPI_;
+	auto n_ppi = fanMgr_->pcoll->numPPI_;
+	write_size(f, n_pat);
+	write_size(f, n_pi);
+	write_size(f, n_ppi);
+	for (auto & pat: fanMgr_->pcoll->patternVector_) {
+		fwrite(pat.PI1_.data(), sizeof(Value), pat.PI1_.size(), f);
+		fwrite(pat.PPI_.data(), sizeof(Value), pat.PPI_.size(), f);
+	}
+	fclose(f);
 	return true;
 }
 

@@ -263,6 +263,7 @@ bool AddFaultCmd::exec(const std::vector<std::string> &argv)
 	// add all faults
 	if (optMgr_.isFlagSet("a"))
 	{
+		// std::cout << "Extract All Faults" << "\n";
 		addAllFault();
 	}
 	else
@@ -327,6 +328,7 @@ void AddFaultCmd::addAllFault()
 	{
 		(*it) = &fanMgr_->fListExtract->extractedFaults_[i];
 	}
+	std::cout << "Total Faults: " << fanMgr_->fListExtract->extractedFaults_.size() << "\n";
 
 	TmStat stat;
 	fanMgr_->tmusg.getPeriodUsage(stat);

@@ -93,6 +93,24 @@ private:
     FanMgr *fanMgr_;
 };
 
+class ExportCircuitCmd : public CommonNs::Cmd {
+public:
+    ExportCircuitCmd(const std::string &name, FanMgr * fanMgr);
+    ~ExportCircuitCmd();
+    bool exec(const std::vector<std::string> &argv);
+private:
+    FanMgr *fanMgr_;
+};
+
+class ExportPatCmd : public CommonNs::Cmd {
+public:
+    ExportPatCmd(const std::string &name, FanMgr * fanMgr);
+    ~ExportPatCmd();
+    bool exec(const std::vector<std::string> &argv);
+private:
+    FanMgr *fanMgr_;
+};
+
 //Ne
 class SetPatternTypeCmd : public CommonNs::Cmd {
 public:
